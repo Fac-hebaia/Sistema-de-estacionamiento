@@ -4,7 +4,7 @@ import {
   Search, ParkingSquare, DollarSign, Activity, CheckCircle2 
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://sistema-de-estacionamiento.onrender.com';
 const TARIFA_POR_HORA = 1500; // Tarifa configurable por hora ($)
 const CAPACIDAD_TOTAL = 30;   // Capacidad del estacionamiento
 
