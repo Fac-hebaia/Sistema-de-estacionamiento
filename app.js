@@ -1,8 +1,20 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
+import cors from 'cors';
+import 'dotenv/config';
+
+const connectionString = process.env.DATABASE_URL;
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const app = express();
-const prisma = new PrismaClient();
+
+
+
+app.use(cors()); 
 
 app.use(express.json());
 
@@ -18,11 +30,13 @@ app.get("/", async(req, res) => {
 })
 
 app.get("/usuarios", async (req, res) => {
+    console.log("📥 ¡Petición recibida en /usuarios!");
     try {
         const buscarUsuario = await prisma.auto.findMany({where: {activo: true}, include: {usuario: true}});
         if(buscarUsuario.length === 0) {return res.status(404).json("Usuario no encontrado")}
         res.json(buscarUsuario)}
     catch(error) {
+        console.error("Detalle del error: ",error)
         res.status(500).json("Hubo una falla en el servidor")
     }
 })
@@ -39,18 +53,39 @@ app.get("/autos/:patente", async (req, res) => {
 
 
 app.post("/usuarios", async (req, res) => {
-    const {modeloAuto, patente} = req.body;
-    if (!modeloAuto || !patente) {return res.status(400).json("Falta completar campos obligatorios")}
+    const { modeloAuto, patente } = req.body;
+    if (!modeloAuto || !patente) {
+        return res.status(400).json("Falta completar campos obligatorios");
+    }
+
     try {
-        const buscarAuto = await prisma.auto.findUnique({where: {patente: patente}});
-        if (buscarAuto) {return res.status(409).json("Auto ya registrado en la base de datos")};
-        const registro = await prisma.usuario.create({data: {fechaRegistro: new Date(), auto: {create: {modelo: modeloAuto, patente: patente}} }});
-        res.status(201).json({mensaje: "Auto registrado!", usuario: registro})
+        const buscarAuto = await prisma.auto.findUnique({ where: { patente: patente } });
+        if (buscarAuto) {
+            return res.status(409).json("Auto ya registrado en la base de datos");
+        }
+
+        // Generamos un número de registro aleatorio para cumplir con el esquema
+        const numRegistro = Math.floor(100000 + Math.random() * 900000);
+
+        const registro = await prisma.usuario.create({
+            data: {
+                numRegistro: numRegistro,
+                fechaRegistro: new Date(),
+                auto: {
+                    create: {
+                        modelo: modeloAuto,
+                        patente: patente
+                    }
+                }
+            }
+        });
+
+        res.status(201).json({ mensaje: "Auto registrado!", usuario: registro });
+    } catch (error) {
+        console.error("💥 Error al registrar en POST /usuarios:", error);
+        res.status(500).json("Error en el servidor");
     }
-    catch (error) {
-        res.status(500).json("Error en el servidor")
-    }
-})
+});
 
 app.patch("/usuarios/:id", async (req, res) => {
 
