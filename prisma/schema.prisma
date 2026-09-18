@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+    id  Int @id @default(autoincrement())
+    auto Auto?
+    numRegistro Int
+    fechaRegistro DateTime @default(now())
+}
+
+model Auto {
+    idAuto Int @id @default(autoincrement())
+    usuarioId Int @unique
+    usuario   Usuario @relation(fields: [usuarioId], references: [id])
+    modelo String
+    patente String @unique
+    activo Boolean @default(true)
+}
+
